@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Response, Depends, Header
+from fastapi import FastAPI, HTTPException, Request, Response, Depends, Header, status
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -16,18 +16,224 @@ app = FastAPI(
     version="1.0.0"
 )
 
-@app.post("/create_user")
+
+@app.post(
+    "/create_user",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {
+            "description": "Пользователь успешно создан",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "name": "Alice",
+                        "email": "alice@example.com",
+                        "age": 30,
+                        "is_subscribed": True
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Ошибка валидации данных",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 400,
+                        "status": "error",
+                        "message": "Ошибка валидации входных данных",
+                        "errors": [
+                            {
+                                "field": "email",
+                                "message": "value is not a valid email address",
+                                "type": "value_error"
+                            },
+                            {
+                                "field": "age",
+                                "message": "ensure this value is greater than or equal to 1",
+                                "type": "value_error"
+                            }
+                        ],
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Необрабатываемая сущность - неверный формат JSON",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 422,
+                        "status": "error",
+                        "message": "Неверный формат JSON",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        429: {
+            "description": "Слишком много запросов",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 429,
+                        "status": "error",
+                        "message": "Превышен лимит запросов. Попробуйте позже",
+                        "retry_after": 60,
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 async def create_user(user: UserCreate):
     return user
 
-@app.get("/product/{product_id}")
+
+@app.get(
+    "/product/{product_id}",
+    responses={
+        200: {
+            "description": "Продукт успешно найден",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "product_id": 123,
+                        "name": "Smartphone",
+                        "category": "Electronics",
+                        "price": 599.99
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Неверный ID продукта",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 400,
+                        "status": "error",
+                        "message": "ID продукта должен быть положительным целым числом",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Продукт не найден",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 404,
+                        "status": "error",
+                        "message": "Продукт с ID 999 не найден",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 async def get_product(product_id: int):
     product = get_product_by_id(product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@app.get("/products/search")
+
+@app.get(
+    "/products/search",
+    responses={
+        200: {
+            "description": "Поиск выполнен успешно",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "product_id": 123,
+                            "name": "Smartphone",
+                            "category": "Electronics",
+                            "price": 599.99
+                        },
+                        {
+                            "product_id": 789,
+                            "name": "Iphone",
+                            "category": "Electronics",
+                            "price": 1299.99
+                        }
+                    ]
+                }
+            }
+        },
+        400: {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 400,
+                        "status": "error",
+                        "message": "Параметр 'keyword' обязателен для заполнения",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "Неверный формат параметров",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 422,
+                        "status": "error",
+                        "message": "Параметр 'limit' должен быть целым числом от 1 до 100",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 async def products_search(
     keyword: str,
     category: Optional[str] = None,
@@ -39,7 +245,87 @@ async def products_search(
     results = search_products(keyword, category, limit)
     return results
 
-@app.post("/login")
+
+@app.post(
+    "/login",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {
+            "description": "Успешная аутентификация",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Login successful",
+                        "user": {
+                            "user_id": "550e8400-e29b-41d4-a716-446655440000",
+                            "username": "user123",
+                            "email": "user123@example.com"
+                        }
+                    }
+                }
+            },
+            "headers": {
+                "Set-Cookie": {
+                    "description": "Установка session_token cookie",
+                    "example": "session_token=abc123...; HttpOnly; Max-Age=300"
+                }
+            }
+        },
+        400: {
+            "description": "Неверный формат запроса",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 400,
+                        "status": "error",
+                        "message": "Неверный формат JSON",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Ошибка аутентификации",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 401,
+                        "status": "error",
+                        "message": "Неверное имя пользователя или пароль",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        429: {
+            "description": "Слишком много попыток входа",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 429,
+                        "status": "error",
+                        "message": "Слишком много попыток входа. Подождите 5 минут",
+                        "retry_after": 300,
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 async def login(request: LoginRequest, response: Response):
     user = verify_user(request.username, request.password)
 
@@ -67,7 +353,87 @@ async def login(request: LoginRequest, response: Response):
 
     return {"message": "Login successful", "user": user}
 
-@app.get("/profile")
+
+@app.get(
+    "/profile",
+    responses={
+        200: {
+            "description": "Профиль успешно получен",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "username": "user123",
+                        "email": "user123@example.com",
+                        "last_activity": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Не авторизован",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "no_token": {
+                            "summary": "Отсутствует токен сессии",
+                            "value": {
+                                "code": 401,
+                                "status": "error",
+                                "message": "Unauthorized - No session token",
+                                "timestamp": "2025-04-10T10:30:00+00:00"
+                            }
+                        },
+                        "invalid_token": {
+                            "summary": "Неверный токен",
+                            "value": {
+                                "code": 401,
+                                "status": "error",
+                                "message": "Invalid session - Bad signature",
+                                "timestamp": "2025-04-10T10:30:00+00:00"
+                            }
+                        },
+                        "expired": {
+                            "summary": "Сессия истекла",
+                            "value": {
+                                "code": 401,
+                                "status": "error",
+                                "message": "Session expired - Inactive for more than 5 minutes",
+                                "timestamp": "2025-04-10T10:30:00+00:00"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Доступ запрещен",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 403,
+                        "status": "error",
+                        "message": "Access denied - Insufficient permissions",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 @app.get("/user")
 async def get_profile(request: Request, response: Response):
     session_token = request.cookies.get("session_token")
@@ -120,14 +486,134 @@ async def get_profile(request: Request, response: Response):
         "last_activity": datetime.fromtimestamp(last_activity, timezone.utc).isoformat()
     }
 
-@app.get("/headers")
+
+@app.get(
+    "/headers",
+    responses={
+        200: {
+            "description": "Заголовки успешно получены",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                        "Accept-Language": "en-US,en;q=0.9,es;q=0.8"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Ошибка валидации заголовков",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 400,
+                        "status": "error",
+                        "message": "Ошибка валидации заголовков",
+                        "errors": [
+                            {
+                                "field": "Accept-Language",
+                                "message": "Неверный формат Accept-Language",
+                                "type": "value_error"
+                            }
+                        ],
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        406: {
+            "description": "Неподдерживаемый формат",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 406,
+                        "status": "error",
+                        "message": "Неподдерживаемый Accept header",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 async def get_headers(headers: CommonHeaders = Depends()):
     return {
         "User-Agent": headers.user_agent,
         "Accept-Language": headers.accept_language
     }
 
-@app.get("/info")
+
+@app.get(
+    "/info",
+    responses={
+        200: {
+            "description": "Информация успешно получена",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Добро пожаловать! Ваши заголовки успешно обработаны.",
+                        "headers": {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                            "Accept-Language": "en-US,en;q=0.9,es;q=0.8"
+                        }
+                    }
+                }
+            },
+            "headers": {
+                "X-Server-Time": {
+                    "description": "Текущее время сервера",
+                    "example": "2025-04-10T10:30:00+00:00"
+                }
+            }
+        },
+        400: {
+            "description": "Ошибка валидации заголовков",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 400,
+                        "status": "error",
+                        "message": "Ошибка валидации заголовков",
+                        "errors": [
+                            {
+                                "field": "Accept-Language",
+                                "message": "Неверный формат Accept-Language",
+                                "type": "value_error"
+                            }
+                        ],
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "code": 500,
+                        "status": "error",
+                        "message": "Внутренняя ошибка сервера",
+                        "timestamp": "2025-04-10T10:30:00+00:00"
+                    }
+                }
+            }
+        }
+    }
+)
 async def get_info(
     headers: CommonHeaders = Depends(),
     response: Response = None
